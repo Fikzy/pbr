@@ -73,6 +73,23 @@ This is the kind of results you should get with the diffuse texture `Alexs_Apt_2
 
 ### 3. Image-Based Lighting (IBL): Specular
 
+For the specular IBL, the texture encodes different version of the environment
+for different roughness value. There is a total of **6** roughness levels, starting
+at the bottom of the texture.
+
+Each level is then half the size of the previous level. Thus, you will need to
+compute the good position of the UV from the roughness value.
+
+In order to get proper blending, you are advised to sample two roughness levels
+simultaneously, and to blend them together.
+
+The tasks to accomplish to lit your objects with the specular IBL are:
+1. Load one of the  `specular` files provied in the folder `assets/env`
+2. Convert the reflected ray from cartesian to polar
+3. Offset the polar coordinates according to the roughness level
+4. Repeat step **2** and **3** for a second level
+5. Fetch both levels and blend them together according to how far between the two the sample was
+
 This is the kind of results you should get with the diffuse texture `Alexs_Apt_2k-specular-RGBM.png`:
 ![Example of results you should obtain using only the diffuse IBL](./screenshots/ibl-specular.jpg)
 
