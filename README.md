@@ -5,13 +5,12 @@ The goal of this project is to implement a PBR renderer. You are asked to implem
 * A Cook-Torrance GGX specular BRDF
 
 To learn about:
-* The subject, please reach the [Assignment](#assignment)
+* The subject, please reach the [Assignment section](#assignment)
 * The provided code, please have a look at the [Provided Code section](#provided-code).
-
 
 ## Installation
 
-After cloning the repository, install dependencies using:
+After cloning the repository, install the dependencies using:
 
 ```sh
 yarn # Alternatively you can run `npm install`
@@ -37,12 +36,16 @@ will automatically auto-reload with the latest changes.
 
 ## Assignment
 
-### 1. Ponctual Lights
-
-> By `Poncutual Lights`, I mean directional lights or point ligts.
-
 You are free to proceed the way you want. However, I would advise you to
 go step by step and to check intermediate results.
+
+It's important to ensure intermediate results are correct. Otherwise, you will spend time
+trying to figure out why your specular is off, when the issue might actually comes from a different part of the pipeline.
+
+### 1. Ponctual Lights
+
+You can implement either directional lights or point lights (or both!). For better visual results,
+I would advise you to go for point lights :)
 
 This is the steps I followed when implementing this subject, and I do recommend it
 to ensure every intermediate result is correct:
@@ -52,9 +55,6 @@ to ensure every intermediate result is correct:
 3. Send simple light data to the shader, and display them
 4. Implement the Lambertian diffuse BRDF
 5. Implement the Cook-Torrance GGX specular BRDF
-
-It's important to ensure intermediate results are correct. Otherwise, you will spend time
-trying to figure out why your specular is off, when the issue might actually comes from a different part of the pipeline.
 
 This is the kind of results you should get with 4 point lights:
 ![Example of results you should obtain with point lights](./screenshots/pointlights.jpg)
@@ -74,26 +74,28 @@ This is the kind of results you should get with the diffuse texture `Alexs_Apt_2
 ### 3. Image-Based Lighting (IBL): Specular
 
 For the specular IBL, the texture encodes different version of the environment
-for different roughness value. There is a total of **6** roughness levels, starting
+for different roughness values. There is a total of **6** roughness levels, starting
 at the bottom of the texture.
 
-Each level is then half the size of the previous level. Thus, you will need to
+Each level is **half the size** of the previous one. Thus, you will need to
 compute the good position of the UV from the roughness value.
 
 In order to get proper blending, you are advised to sample two roughness levels
 simultaneously, and to blend them together.
 
-The tasks to accomplish to lit your objects with the specular IBL are:
+The tasks can be summed up as:
 1. Load one of the  `specular` files provied in the folder `assets/env`
-2. Convert the reflected ray from cartesian to polar
-3. Offset the polar coordinates according to the roughness level
-4. Repeat step **2** and **3** for a second level
-5. Fetch both levels and blend them together according to how far between the two the sample was
+2. Load the texture `assets/ggx-brdf-integrated.png` containing the precomputed BRDF
+3. Convert the reflected ray from cartesian to polar
+4. Offset the polar coordinates according to the roughness level
+5. Repeat step **2** and **3** for a second level
+6. Fetch both levels and blend them together according to how far between the two the sample was
+7. Apply the result to the rendering equation using the pre-computed BRDF
 
 This is the kind of results you should get with the diffuse texture `Alexs_Apt_2k-specular-RGBM.png`:
 ![Example of results you should obtain using only the diffuse IBL](./screenshots/ibl-specular.jpg)
 
-Now that you implemented both the diffuse and the specular IBL, you can see the combined result of both:
+Now that you implemented both the diffuse and the specular IBL, take a look at the combined results:
 
 ![Example of results you should obtain with both the diffuse and specular IBL](./screenshots/ibl-total.jpg)
 
@@ -105,8 +107,7 @@ The feature described here aren't mandatory but will make you learn a lot of stu
 
 PBR is meaningless without carefully authored textures bringing complexity to materials.
 
-Load the **roughness**, **metalness**, **albedo**, and **normal map**, and use the textures
-to feed the BRDF.
+You can download some texture that would map well to a sphere, such as [those ones](http://freepbr.com/materials/rusted-iron-pbr-metal-material-alt/).
 
 ### 2. Experiment BRDFs
 
