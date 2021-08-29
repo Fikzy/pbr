@@ -112,4 +112,35 @@ There are so many fun things you can do:
 
 ## Provided Code
 
+### Index
+
+The [index](./src/index.ts) is the entry point of your application. The game loop is started there
+and resources are initialized in the `Application` class.
+
+In this repository, I created a simple shader that sets a uniform color on a triangle. This sample
+will help you start to implement your PBR shader.
+
+### Context
+
+The [context](./src/gl.ts) is one of the most important. It abstracts WebGL calls and resources management.
+Without that, you would need to spend quite a bit of code to setup:
+* Geometries (Vertex Buffers)
+* Textures
+* Shaders
+* etc...
+
+I didn't you to spend your time writing an abstraction, so I made one for you. If you want fancier features, please
+feel free to update it with your own changes.
+
+For the most curious ones, the file uses `WeakMap` (basically hash tables) to retrieve uploaded GL objects
+from your own instances (textures, geometries, etc...).
+
 ### Shader
+
+The [Shader](./src/shader/shader.ts) just contains the two shaders (vertex and fragment) as strings.
+It also contains a dictionnary (`defines`) that can allow you to conditionnally compile code or not.
+
+When working on big rendering project, we often want several versions of a same shader with some differences.
+Using `#define`, we take advantage of the preproccessor to compile different variants.
+
+The values in the `defines` dictionnary will basically be preprended too your shader before compiling it.
