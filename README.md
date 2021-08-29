@@ -61,6 +61,13 @@ This is the kind of results you should get with 4 point lights:
 
 ### 2. Image-Based Lighting (IBL): Diffuse
 
+The tasks to accomplish to lit your objects with the diffuse IBL are:
+1. Load one of the  `diffuse` files provied in the folder `assets/env`
+2. Use the geometry normal to sample the texture. Be careful here, the texture
+   is saved as a spherical projection. Thus, you will need to convert from cartesian
+   coordinates to polar coordinates
+4. Apply the texture contribution to the indirect lighting
+
 This is the kind of results you should get with the diffuse texture `Alexs_Apt_2k-diffuse-RGBM.png`:
 ![Example of results you should obtain using only the diffuse IBL](./screenshots/ibl-diffuse.jpg)
 
