@@ -97,7 +97,7 @@ class Application {
   render() {
     this._context.clear();
     this._context.setDepthTest(true);
-    this._context.setCulling(WebGL2RenderingContext.BACK);
+    // this._context.setCulling(WebGL2RenderingContext.BACK);
 
     const aspect =
       this._context.gl.drawingBufferWidth /
