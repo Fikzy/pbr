@@ -622,6 +622,8 @@ export function uploadUniform(
   // save function pointer per type.
 
   switch (type) {
+    case gl.BOOL:
+      gl.uniform1ui(loc, value as number);
     case gl.FLOAT:
       gl.uniform1f(loc, value as number);
       break;
