@@ -66,7 +66,7 @@ class Application {
     // this._lights.push(new PointLight(vec3.fromValues(1, -1, 5)));
     // this._lights.push(new PointLight(vec3.fromValues(-1, -1, 5)));
 
-    const sphereGeometry = new SphereGeometry(0.5, 256, 256);
+    const sphereGeometry = new SphereGeometry(0.4, 256, 256);
     this._geometries.push(sphereGeometry);
 
     for (let i = -2; i <= 2; i++) {
