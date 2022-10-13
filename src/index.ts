@@ -12,9 +12,9 @@ import { UniformType } from './types';
 
 interface GUIProperties {
   albedo: number[];
-  lightPositionX: number;
-  lightPositionY: number;
-  lightPositionZ: number;
+  lightOffsetX: number;
+  lightOffsetY: number;
+  lightOffsetZ: number;
 }
 
 /**
@@ -84,9 +84,9 @@ class Application {
 
     this._guiProperties = {
       albedo: [255, 255, 255],
-      lightPositionX: 0,
-      lightPositionY: 0,
-      lightPositionZ: 0
+      lightOffsetX: 0,
+      lightOffsetY: 0,
+      lightOffsetZ: 0
     };
 
     this._createGUI();
@@ -162,12 +162,12 @@ class Application {
 
       // this._uniforms[`uPointLights[${index}].position`] = light.positionWS;
 
-      const lightPosition = vec3.fromValues(
-        light.positionWS[0] + props.lightPositionX,
-        light.positionWS[1] + props.lightPositionY,
-        light.positionWS[2] + props.lightPositionZ
+      const lightOffset = vec3.fromValues(
+        light.positionWS[0] + props.lightOffsetX,
+        light.positionWS[1] + props.lightOffsetY,
+        light.positionWS[2] + props.lightOffsetZ
       );
-      this._uniforms[`uPointLights[${index}].position`] = lightPosition;
+      this._uniforms[`uPointLights[${index}].position`] = lightOffset;
     });
 
     // Feed models to shader and draw them
@@ -198,10 +198,10 @@ class Application {
 
     gui.addColor(this._guiProperties, 'albedo');
 
-    const lightPosition = gui.addFolder('Light position');
-    lightPosition.add(this._guiProperties, 'lightPositionX', -5, 5);
-    lightPosition.add(this._guiProperties, 'lightPositionY', -5, 5);
-    lightPosition.add(this._guiProperties, 'lightPositionZ', -5, 5);
+    const lightOffset = gui.addFolder('light offset');
+    lightOffset.add(this._guiProperties, 'lightOffsetX', -5, 5);
+    lightOffset.add(this._guiProperties, 'lightOffsetY', -5, 5);
+    lightOffset.add(this._guiProperties, 'lightOffsetZ', -5, 5);
 
     return gui;
   }
