@@ -12,6 +12,7 @@ interface GUIProperties {
   albedo: number[];
   lightPositionX: number;
   lightPositionY: number;
+  lightPositionZ: number;
 }
 
 /**
@@ -58,10 +59,10 @@ class Application {
     this._lights.push(new PointLight(vec3.fromValues(1, 1, 2)));
 
     // Multiple point lights
-    // this._lights.push(new PointLight(vec3.fromValues(-1, -1, 2)));
-    // this._lights.push(new PointLight(vec3.fromValues(-2, 2, 2)));
-    // this._lights.push(new PointLight(vec3.fromValues(2, 2, 2)));
-    // this._lights.push(new PointLight(vec3.fromValues(1, -1, 2)));
+    // this._lights.push(new PointLight(vec3.fromValues(-1, 1, 5)));
+    // this._lights.push(new PointLight(vec3.fromValues(1, 1, 5)));
+    // this._lights.push(new PointLight(vec3.fromValues(1, -1, 5)));
+    // this._lights.push(new PointLight(vec3.fromValues(-1, -1, 5)));
 
     this._shader = new PBRShader();
     this._shader.pointLightCount = this._lights.length;
@@ -70,8 +71,9 @@ class Application {
 
     this._guiProperties = {
       albedo: [255, 255, 255],
-      lightPositionX: 1,
-      lightPositionY: 1
+      lightPositionX: 0,
+      lightPositionY: 0,
+      lightPositionZ: 0
     };
 
     this._createGUI();
@@ -99,10 +101,7 @@ class Application {
    * Called at every loop, before the [[Application.render]] method.
    */
   update() {
-    const props = this._guiProperties;
-
-    this._lights[0].positionWS[0] = props.lightPositionX;
-    this._lights[0].positionWS[1] = props.lightPositionY;
+    // Empty
   }
 
   /**
@@ -151,7 +150,15 @@ class Application {
     this._lights.forEach((light, index) => {
       this._uniforms[`uPointLights[${index}].intensity`] = light.intensity;
       this._uniforms[`uPointLights[${index}].color`] = light.color;
-      this._uniforms[`uPointLights[${index}].position`] = light.positionWS;
+
+      // this._uniforms[`uPointLights[${index}].position`] = light.positionWS;
+
+      const lightPosition = vec3.fromValues(
+        light.positionWS[0] + props.lightPositionX,
+        light.positionWS[1] + props.lightPositionY,
+        light.positionWS[2] + props.lightPositionZ
+      );
+      this._uniforms[`uPointLights[${index}].position`] = lightPosition;
     });
 
     // Draws the triangle.
@@ -171,9 +178,13 @@ class Application {
    */
   private _createGUI(): GUI {
     const gui = new GUI();
+
     gui.addColor(this._guiProperties, 'albedo');
+
     gui.add(this._guiProperties, 'lightPositionX', -5, 5);
     gui.add(this._guiProperties, 'lightPositionY', -5, 5);
+    gui.add(this._guiProperties, 'lightPositionZ', -5, 5);
+
     return gui;
   }
 }
