@@ -24,7 +24,8 @@ out vec3 viewDirection;
 
 struct Model
 {
-  mat4 localToProjection;
+  mat4 localToProjection; // viewProjection matrix?
+  mat4 view;
 };
 
 uniform Model uModel;
@@ -39,7 +40,7 @@ uniform Camera uCamera;
 void main()
 {
   vec4 positionLocal = vec4(in_position, 1.0);
-  gl_Position = uModel.localToProjection * positionLocal;
+  gl_Position = uModel.localToProjection * uModel.view * positionLocal;
   
   vNormalWS = in_normal;
   vPositionWS = in_position;

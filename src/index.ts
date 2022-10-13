@@ -1,9 +1,11 @@
 import { GUI } from 'dat.gui';
 import { mat4, vec3 } from 'gl-matrix';
 import { Camera } from './camera';
+import { Geometry } from './geometries/geometry';
 import { SphereGeometry } from './geometries/sphere';
 import { GLContext } from './gl';
 import { PointLight } from './lights/lights';
+import { Model } from './model';
 import { PBRShader } from './shader/pbr-shader';
 import { Texture, Texture2D } from './textures/texture';
 import { UniformType } from './types';
@@ -29,9 +31,10 @@ class Application {
   private _context: GLContext;
 
   private _shader: PBRShader;
-  private _geometry: SphereGeometry;
+  private _geometries: Geometry[] = [];
   private _uniforms: Record<string, UniformType | Texture>;
   private _lights: PointLight[] = [];
+  private _models: Model[] = [];
 
   private _textureExample: Texture2D<HTMLElement> | null;
 
@@ -48,11 +51,10 @@ class Application {
     this._context = new GLContext(canvas);
     this._camera = new Camera();
 
-    this._geometry = new SphereGeometry(0.5, 256, 256);
     this._uniforms = {
       'uMaterial.albedo': vec3.create(),
-      'uModel.localToProjection': mat4.create()
-      // 'uCamera.position': vec3.create()
+      'uModel.localToProjection': mat4.create(),
+      'uModel.view': mat4.create()
     };
 
     // Single point light
@@ -63,6 +65,17 @@ class Application {
     // this._lights.push(new PointLight(vec3.fromValues(1, 1, 5)));
     // this._lights.push(new PointLight(vec3.fromValues(1, -1, 5)));
     // this._lights.push(new PointLight(vec3.fromValues(-1, -1, 5)));
+
+    const sphereGeometry = new SphereGeometry(0.5, 256, 256);
+    this._geometries.push(sphereGeometry);
+
+    for (let i = -2; i <= 2; i++) {
+      for (let j = -2; j <= 2; j++) {
+        const model = new Model(sphereGeometry);
+        model.transform.position = vec3.fromValues(i, j, 0);
+        this._models.push(model);
+      }
+    }
 
     this._shader = new PBRShader();
     this._shader.pointLightCount = this._lights.length;
@@ -83,7 +96,9 @@ class Application {
    * Initializes the application.
    */
   async init() {
-    this._context.uploadGeometry(this._geometry);
+    this._geometries.forEach((geometry) =>
+      this._context.uploadGeometry(geometry)
+    );
     this._context.compileProgram(this._shader);
 
     // Example showing how to load a texture and upload it to GPU.
@@ -124,7 +139,7 @@ class Application {
       this._context.gl.drawingBufferHeight;
 
     const camera = this._camera;
-    vec3.set(camera.transform.position, 0.0, 0.0, 2.0);
+    vec3.set(camera.transform.position, 0.0, 0.0, 8.0);
     camera.setParameters(aspect);
     camera.update();
 
@@ -137,16 +152,10 @@ class Application {
       props.albedo[1] / 255,
       props.albedo[2] / 255
     );
-    // Sets the viewProjection matrix.
-    // **Note**: if you want to modify the position of the geometry, you will
-    // need to take the matrix of the mesh into account here.
-    mat4.copy(
-      this._uniforms['uModel.localToProjection'] as mat4,
-      camera.localToProjection
-    );
 
     this._uniforms['uCamera.position'] = camera.transform.position;
 
+    // Feed lights to shader
     this._lights.forEach((light, index) => {
       this._uniforms[`uPointLights[${index}].intensity`] = light.intensity;
       this._uniforms[`uPointLights[${index}].color`] = light.color;
@@ -161,8 +170,16 @@ class Application {
       this._uniforms[`uPointLights[${index}].position`] = lightPosition;
     });
 
-    // Draws the triangle.
-    this._context.draw(this._geometry, this._shader, this._uniforms);
+    // Feed models to shader and draw them
+    this._models.forEach((model) => {
+      // Sets the viewProjection matrix.
+      // **Note**: if you want to modify the position of the geometry, you will
+      // need to take the matrix of the mesh into account here.
+      this._uniforms['uModel.localToProjection'] = camera.localToProjection;
+      this._uniforms['uModel.view'] = model.transform.combine();
+
+      this._context.draw(model.geometry, this._shader, this._uniforms);
+    });
   }
 
   /**
@@ -181,9 +198,10 @@ class Application {
 
     gui.addColor(this._guiProperties, 'albedo');
 
-    gui.add(this._guiProperties, 'lightPositionX', -5, 5);
-    gui.add(this._guiProperties, 'lightPositionY', -5, 5);
-    gui.add(this._guiProperties, 'lightPositionZ', -5, 5);
+    const lightPosition = gui.addFolder('Light position');
+    lightPosition.add(this._guiProperties, 'lightPositionX', -5, 5);
+    lightPosition.add(this._guiProperties, 'lightPositionY', -5, 5);
+    lightPosition.add(this._guiProperties, 'lightPositionZ', -5, 5);
 
     return gui;
   }
