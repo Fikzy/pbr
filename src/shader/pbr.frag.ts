@@ -43,9 +43,11 @@ void main()
   vec3 diffuse = vec3(0, 0, 0);
   for (int i = 0; i < POINT_LIGHT_COUNT; ++i) {
     PointLight light = uPointLights[i];
+    
     vec3 lightDirection = normalize(light.position - vPositionWS);
     float lightDistance = length(light.position - vPositionWS);
-    diffuse += max(dot(normal, lightDirection), 0.0) * light.color * light.intensity / lightDistance;
+
+    diffuse += max(dot(normal, lightDirection), 0.0) * light.color * light.intensity * 1.0 /(lightDistance * lightDistance);
   }
 
   // **DO NOT** forget to apply gamma correction as last step.
