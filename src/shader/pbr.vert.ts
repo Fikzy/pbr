@@ -1,5 +1,4 @@
 export default `
-
 precision highp float;
 
 in vec3 in_position;
@@ -13,6 +12,8 @@ in vec3 in_normal;
  */
 
 out vec3 vNormalWS;
+out vec3 vPositionWS;
+out vec3 viewDirection;
 #ifdef USE_UV
   out vec2 vUv;
 #endif // USE_UV
@@ -28,10 +29,20 @@ struct Model
 
 uniform Model uModel;
 
-void
-main()
+struct Camera
+{
+  vec3 position;
+};
+
+uniform Camera uCamera;
+
+void main()
 {
   vec4 positionLocal = vec4(in_position, 1.0);
   gl_Position = uModel.localToProjection * positionLocal;
+  
+  vNormalWS = in_normal;
+  vPositionWS = in_position;
+  viewDirection = normalize(uCamera.position - in_position);
 }
 `;

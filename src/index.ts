@@ -1,14 +1,17 @@
 import { GUI } from 'dat.gui';
 import { mat4, vec3 } from 'gl-matrix';
 import { Camera } from './camera';
-import { TriangleGeometry } from './geometries/triangle';
+import { SphereGeometry } from './geometries/sphere';
 import { GLContext } from './gl';
+import { PointLight } from './lights/lights';
 import { PBRShader } from './shader/pbr-shader';
 import { Texture, Texture2D } from './textures/texture';
 import { UniformType } from './types';
 
 interface GUIProperties {
   albedo: number[];
+  lightPositionX: number;
+  lightPositionY: number;
 }
 
 /**
@@ -25,8 +28,9 @@ class Application {
   private _context: GLContext;
 
   private _shader: PBRShader;
-  private _geometry: TriangleGeometry;
+  private _geometry: SphereGeometry;
   private _uniforms: Record<string, UniformType | Texture>;
+  private _lights: PointLight[] = [];
 
   private _textureExample: Texture2D<HTMLElement> | null;
 
@@ -43,17 +47,31 @@ class Application {
     this._context = new GLContext(canvas);
     this._camera = new Camera();
 
-    this._geometry = new TriangleGeometry();
+    this._geometry = new SphereGeometry(0.5, 256, 256);
     this._uniforms = {
       'uMaterial.albedo': vec3.create(),
       'uModel.localToProjection': mat4.create()
+      // 'uCamera.position': vec3.create()
     };
 
+    // Single point light
+    this._lights.push(new PointLight(vec3.fromValues(1, 1, 2)));
+
+    // Multiple point lights
+    // this._lights.push(new PointLight(vec3.fromValues(-1, -1, 2)));
+    // this._lights.push(new PointLight(vec3.fromValues(-2, 2, 2)));
+    // this._lights.push(new PointLight(vec3.fromValues(2, 2, 2)));
+    // this._lights.push(new PointLight(vec3.fromValues(1, -1, 2)));
+
     this._shader = new PBRShader();
+    this._shader.pointLightCount = this._lights.length;
+
     this._textureExample = null;
 
     this._guiProperties = {
-      albedo: [255, 255, 255]
+      albedo: [255, 255, 255],
+      lightPositionX: 1,
+      lightPositionY: 1
     };
 
     this._createGUI();
@@ -81,7 +99,10 @@ class Application {
    * Called at every loop, before the [[Application.render]] method.
    */
   update() {
-    /** Empty. */
+    const props = this._guiProperties;
+
+    this._lights[0].positionWS[0] = props.lightPositionX;
+    this._lights[0].positionWS[1] = props.lightPositionY;
   }
 
   /**
@@ -125,6 +146,14 @@ class Application {
       camera.localToProjection
     );
 
+    this._uniforms['uCamera.position'] = camera.transform.position;
+
+    this._lights.forEach((light, index) => {
+      this._uniforms[`uPointLights[${index}].intensity`] = light.intensity;
+      this._uniforms[`uPointLights[${index}].color`] = light.color;
+      this._uniforms[`uPointLights[${index}].position`] = light.positionWS;
+    });
+
     // Draws the triangle.
     this._context.draw(this._geometry, this._shader, this._uniforms);
   }
@@ -143,6 +172,8 @@ class Application {
   private _createGUI(): GUI {
     const gui = new GUI();
     gui.addColor(this._guiProperties, 'albedo');
+    gui.add(this._guiProperties, 'lightPositionX', -5, 5);
+    gui.add(this._guiProperties, 'lightPositionY', -5, 5);
     return gui;
   }
 }
