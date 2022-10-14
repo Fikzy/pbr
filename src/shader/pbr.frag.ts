@@ -1,8 +1,6 @@
 export default `
 precision highp float;
 
-const float PI = 3.14159265359;
-
 in vec3 vNormalWS;
 in vec3 vPositionWS;
 
@@ -34,6 +32,12 @@ struct Camera
 
 uniform Camera uCamera;
 
+uniform sampler2D uDiffuseTexture;
+
+const float PI = 3.14159265359;
+const float RECIPROCAL_PI = 0.31830988618;
+const float RECIPROCAL_PI2 = 0.15915494;
+
 // From three.js
 vec4 sRGBToLinear( in vec4 value ) {
 	return vec4( mix( pow( value.rgb * 0.9478672986 + vec3( 0.0521327014 ), vec3( 2.4 ) ), value.rgb * 0.0773993808, vec3( lessThanEqual( value.rgb, vec3( 0.04045 ) ) ) ), value.a );
@@ -42,6 +46,13 @@ vec4 sRGBToLinear( in vec4 value ) {
 // From three.js
 vec4 LinearTosRGB( in vec4 value ) {
 	return vec4( mix( pow( value.rgb, vec3( 0.41666 ) ) * 1.055 - vec3( 0.055 ), value.rgb * 12.92, vec3( lessThanEqual( value.rgb, vec3( 0.0031308 ) ) ) ), value.a );
+}
+
+vec2 cartesianToPolar(vec3 n) {
+  vec2 uv;
+  uv.x = atan(n.z, n.x) * RECIPROCAL_PI2 + 0.5;
+  uv.y = asin(n.y) * RECIPROCAL_PI + 0.5;
+  return uv;
 }
 
 float normalDistributionGGX(vec3 n, vec3 h, float roughness)
@@ -105,6 +116,10 @@ void main()
 
     // Diffuse (Lambert)
     vec3 diffuseBRDFEval = kd * albedo / PI;
+
+    // IBL Diffuse
+    vec3 irradiance = texture(uDiffuseTexture, cartesianToPolar(normal)).rgb;
+    diffuseBRDFEval *= irradiance;
 
     // Specular (Cook-Torrance GGX)
     float d = normalDistributionGGX(normal, h, roughness);

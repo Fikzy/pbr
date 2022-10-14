@@ -39,7 +39,7 @@ class Application {
   private _lights: PointLight[] = [];
   private _models: Model[] = [];
 
-  private _textureExample: Texture2D<HTMLElement> | null;
+  private _diffuseTexture: Texture2D<HTMLElement> | null = null;
 
   private _camera: Camera;
 
@@ -93,8 +93,6 @@ class Application {
     this._shader = new PBRShader();
     this._shader.pointLightCount = this._lights.length;
 
-    this._textureExample = null;
-
     this._guiProperties = {
       albedo: [255, 255, 255],
       metallic: 0.5,
@@ -117,14 +115,12 @@ class Application {
     );
     this._context.compileProgram(this._shader);
 
-    // Example showing how to load a texture and upload it to GPU.
-    this._textureExample = await Texture2D.load(
-      'assets/ggx-brdf-integrated.png'
+    this._diffuseTexture = await Texture2D.load(
+      'assets/env/Alexs_Apt_2k-diffuse-RGBM.png'
     );
-    if (this._textureExample !== null) {
-      this._context.uploadTexture(this._textureExample);
-      // You can then use it directly as a uniform:
-      // ```uniforms.myTexture = this._textureExample;```
+    if (this._diffuseTexture !== null) {
+      this._context.uploadTexture(this._diffuseTexture);
+      this._uniforms['uDiffuseTexture'] = this._diffuseTexture;
     }
   }
 
