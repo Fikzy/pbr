@@ -44,38 +44,26 @@ vec4 LinearTosRGB( in vec4 value ) {
 	return vec4( mix( pow( value.rgb, vec3( 0.41666 ) ) * 1.055 - vec3( 0.055 ), value.rgb * 12.92, vec3( lessThanEqual( value.rgb, vec3( 0.0031308 ) ) ) ), value.a );
 }
 
-float DistributionGGX(vec3 N, vec3 H, float roughness)
+float normalDistributionGGX(vec3 n, vec3 h, float roughness)
 {
-  float a = roughness * roughness;
+  float a = roughness * roughness; // artistic roughness remapping
   float a2 = a * a;
-  float NdotH = max(dot(N, H), 0.0);
-  float NdotH2 = NdotH*NdotH;
-
-  float num = a2;
-  float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-  denom = PI * denom * denom;
-
-  return num / denom;
+  float ndoth = max(dot(n, h), 0.0);
+  float denom = (ndoth * ndoth * (a2 - 1.0) + 1.0);
+  return a2 / (PI * denom * denom);
 }
 
-float GeometrySchlickGGX(float NdotV, float roughness)
+float geometrySchlickGGX(float ndotv, float roughness)
 {
   float r = (roughness + 1.0);
   float k = (r * r) / 8.0;
-
-  float num = NdotV;
-  float denom = NdotV * (1.0 - k) + k;
-
-  return num / denom;
+  return ndotv / (ndotv * (1.0 - k) + k);
 }
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+float geometrySmith(vec3 n, vec3 v, vec3 l, float roughness)
 {
-  float NdotV = max(dot(N, V), 0.0);
-  float NdotL = max(dot(N, L), 0.0);
-  float ggx2 = GeometrySchlickGGX(NdotV, roughness);
-  float ggx1 = GeometrySchlickGGX(NdotL, roughness);
-
-  return ggx1 * ggx2;
+  float ndotv = max(dot(n, v), 0.0);
+  float ndotl = max(dot(n, l), 0.0);
+  return geometrySchlickGGX(ndotl, roughness) * geometrySchlickGGX(ndotv, roughness);
 }
 
 vec3 fresnelSchlick(float cosTheta, vec3 f0)
@@ -91,7 +79,7 @@ void main()
   // **DO NOT** forget to do all your computation in linear space.
   vec3 albedo = sRGBToLinear(vec4(uMaterial.albedo, 1.0)).rgb;
   vec3 normal = normalize(vNormalWS);
-  vec3 viewDirection = normalize(uCamera.position - vPositionWS);
+  vec3 w_o = normalize(uCamera.position - vPositionWS);
 
   float roughness = clamp(uMaterial.roughness, 0.04, 1.0);
 
@@ -102,28 +90,26 @@ void main()
     PointLight light = uPointLights[i];
 
     vec3 w_i = normalize(light.position - vPositionWS); // light direction
-    vec3 h = normalize(viewDirection + w_i);
+    vec3 h = normalize(w_o + w_i); // halfway vector
     float cosTheta = max(dot(normal, w_i), 0.0);
     
-    // Radiance
+    // Incoming radiance
     float lightDistance = length(light.position - vPositionWS);
     float attenuation = 1.0 / (4.0 * PI * lightDistance * lightDistance); // 1 / 4PI * r^2
     vec3 inRadiance = light.color * light.intensity * attenuation;
 
-    // Specular
-    float ndf = DistributionGGX(normal, h, roughness);
-    float g = GeometrySmith(normal, viewDirection, w_i, roughness);
-
-    vec3 ks = fresnelSchlick(max(dot(h, viewDirection), 0.0), f0);
-    vec3 kd = vec3(1.0) - ks;
+    // Fresnel coefs
+    vec3 ks = fresnelSchlick(max(dot(h, w_o), 0.0), f0);
+    vec3 kd = (1.0 - ks);
     kd *= 1.0 - uMaterial.metallic;
 
-    vec3 num = ndf * g * ks;
-    float denom = 4.0 * max(dot(normal, viewDirection), 0.0) * cosTheta + 0.0001;
-    vec3 specular = num / denom;
+    // Diffuse (Lambert)
+    vec3 diffuseBRDFEval = kd * albedo / PI;
 
-    vec3 specularBRDFEval = specular; // Cook-Torrance
-    vec3 diffuseBRDFEval = kd * albedo / PI; // Lambert diffuse
+    // Specular (Cook-Torrance GGX)
+    float d = normalDistributionGGX(normal, h, roughness);
+    float g = geometrySmith(normal, w_o, w_i, roughness);
+    vec3 specularBRDFEval = d * ks * g / (4.0 * max(dot(normal, w_o), 0.0) * cosTheta + 0.0001);
 
     // Combined
     radiance += (diffuseBRDFEval + specularBRDFEval) * inRadiance * cosTheta;
