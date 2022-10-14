@@ -45,6 +45,5 @@ void main()
   // vNormalWS = in_normal;
   vNormalWS = mat3(transpose(inverse(uModel.view))) * in_normal;
   vPositionWS = vec3(uModel.view * vec4(in_position, 1.0));
-  viewDirection = normalize(uCamera.position - vPositionWS);
 }
 `;

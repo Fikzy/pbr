@@ -12,6 +12,9 @@ import { UniformType } from './types';
 
 interface GUIProperties {
   albedo: number[];
+  metallic: number;
+  roughness: number;
+  ao: number;
   lightOffsetX: number;
   lightOffsetY: number;
   lightOffsetZ: number;
@@ -53,26 +56,36 @@ class Application {
 
     this._uniforms = {
       'uMaterial.albedo': vec3.create(),
+      'uMaterial.roughness': 0.5,
+      'uMaterial.metallic': 0.5,
+      'uMaterial.ao': 1.0,
       'uModel.localToProjection': mat4.create(),
       'uModel.view': mat4.create()
     };
 
     // Single point light
-    this._lights.push(new PointLight(vec3.fromValues(1, 1, 2)));
+    // this._lights.push(new PointLight(vec3.fromValues(0, 0, 4), 300));
 
     // Multiple point lights
-    // this._lights.push(new PointLight(vec3.fromValues(-1, 1, 5)));
-    // this._lights.push(new PointLight(vec3.fromValues(1, 1, 5)));
-    // this._lights.push(new PointLight(vec3.fromValues(1, -1, 5)));
-    // this._lights.push(new PointLight(vec3.fromValues(-1, -1, 5)));
+    this._lights.push(new PointLight(vec3.fromValues(-3, 3, 4), 300));
+    this._lights.push(new PointLight(vec3.fromValues(3, 3, 4), 300));
+    this._lights.push(new PointLight(vec3.fromValues(3, -3, 4), 300));
+    this._lights.push(new PointLight(vec3.fromValues(-3, -3, 4), 300));
 
     const sphereGeometry = new SphereGeometry(0.4, 256, 256);
     this._geometries.push(sphereGeometry);
 
-    for (let i = -2; i <= 2; i++) {
-      for (let j = -2; j <= 2; j++) {
+    const N = 5;
+
+    for (let y = 0; y < N; y++) {
+      for (let x = 0; x < N; x++) {
         const model = new Model(sphereGeometry);
-        model.transform.position = vec3.fromValues(i, j, 0);
+        const offset = (N - 1) / 2;
+        model.transform.position = vec3.fromValues(x - offset, y - offset, 0);
+
+        model.material.metallic = y / (N - 1);
+        model.material.roughness = x / (N - 1);
+
         this._models.push(model);
       }
     }
@@ -84,6 +97,9 @@ class Application {
 
     this._guiProperties = {
       albedo: [255, 255, 255],
+      metallic: 0.5,
+      roughness: 0.5,
+      ao: 1.0,
       lightOffsetX: 0,
       lightOffsetY: 0,
       lightOffsetZ: 0
@@ -146,12 +162,13 @@ class Application {
     const props = this._guiProperties;
 
     // Set the color from the GUI into the uniform list.
-    vec3.set(
-      this._uniforms['uMaterial.albedo'] as vec3,
-      props.albedo[0] / 255,
-      props.albedo[1] / 255,
-      props.albedo[2] / 255
-    );
+    this._models.forEach((model) => {
+      model.material.albedo = [
+        props.albedo[0] / 255,
+        props.albedo[1] / 255,
+        props.albedo[2] / 255
+      ];
+    });
 
     this._uniforms['uCamera.position'] = camera.transform.position;
 
@@ -178,6 +195,15 @@ class Application {
       this._uniforms['uModel.localToProjection'] = camera.localToProjection;
       this._uniforms['uModel.view'] = model.transform.combine();
 
+      this._uniforms['uMaterial.albedo'] = vec3.fromValues(
+        model.material.albedo[0],
+        model.material.albedo[1],
+        model.material.albedo[2]
+      );
+      this._uniforms['uMaterial.metallic'] = model.material.metallic;
+      this._uniforms['uMaterial.roughness'] = model.material.roughness;
+      this._uniforms['uMaterial.ao'] = model.material.ao;
+
       this._context.draw(model.geometry, this._shader, this._uniforms);
     });
   }
@@ -196,9 +222,13 @@ class Application {
   private _createGUI(): GUI {
     const gui = new GUI();
 
-    gui.addColor(this._guiProperties, 'albedo');
+    const material = gui.addFolder('Material');
+    material.addColor(this._guiProperties, 'albedo');
+    // material.add(this._guiProperties, 'metallic', 0.0, 1.0);
+    // material.add(this._guiProperties, 'roughness', 0.0, 1.0);
+    // material.add(this._guiProperties, 'ao', 0.0, 1.0);
 
-    const lightOffset = gui.addFolder('light offset');
+    const lightOffset = gui.addFolder('Light Offset');
     lightOffset.add(this._guiProperties, 'lightOffsetX', -5, 5);
     lightOffset.add(this._guiProperties, 'lightOffsetY', -5, 5);
     lightOffset.add(this._guiProperties, 'lightOffsetZ', -5, 5);

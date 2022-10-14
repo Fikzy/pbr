@@ -79,8 +79,14 @@ export class PointLight extends PonctualLight {
   /** Position of the point light, in World Space. */
   public positionWS: vec3;
 
-  public constructor(position: vec3) {
+  public constructor(
+    position: vec3,
+    intensity: number = 1.0,
+    color: vec3 = vec3.fromValues(1.0, 1.0, 1.0)
+  ) {
     super();
+    this.intensity = intensity;
+    this.color = color;
     this.positionWS = position;
   }
 
