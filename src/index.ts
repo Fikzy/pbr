@@ -40,6 +40,8 @@ class Application {
   private _models: Model[] = [];
 
   private _diffuseTexture: Texture2D<HTMLElement> | null = null;
+  private _specularTexture: Texture2D<HTMLElement> | null = null;
+  private _brdfPreIntTexture: Texture2D<HTMLElement> | null = null;
 
   private _camera: Camera;
 
@@ -118,9 +120,24 @@ class Application {
     this._diffuseTexture = await Texture2D.load(
       'assets/env/Alexs_Apt_2k-diffuse-RGBM.png'
     );
+    this._specularTexture = await Texture2D.load(
+      'assets/env/Alexs_Apt_2k-specular-RGBM.png'
+    );
+    this._brdfPreIntTexture = await Texture2D.load(
+      'assets/ggx-brdf-integrated.png'
+    );
+
     if (this._diffuseTexture !== null) {
       this._context.uploadTexture(this._diffuseTexture);
-      this._uniforms['uDiffuseTexture'] = this._diffuseTexture;
+      this._uniforms['uEnvironment.diffuse'] = this._diffuseTexture;
+    }
+    if (this._specularTexture !== null) {
+      this._context.uploadTexture(this._specularTexture);
+      this._uniforms['uEnvironment.specular'] = this._specularTexture;
+    }
+    if (this._brdfPreIntTexture !== null) {
+      this._context.uploadTexture(this._brdfPreIntTexture);
+      this._uniforms['uEnvironment.brdfPreInt'] = this._brdfPreIntTexture;
     }
   }
 
