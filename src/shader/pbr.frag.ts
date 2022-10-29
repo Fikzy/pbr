@@ -44,6 +44,7 @@ uniform Environment uEnvironment;
 const float PI = 3.14159265359;
 const float RECIPROCAL_PI = 0.31830988618;
 const float RECIPROCAL_PI2 = 0.15915494;
+
 const float MIP_LEVELS = 6.0;
 
 // From three.js
@@ -97,15 +98,18 @@ vec2 texCoords(vec2 uv, float l) {
   return vec2(x, y);
 }
 
+vec3 rgbmToRgb(vec4 value, float maxRange) {
+  return value.rgb * value.a * maxRange;
+}
+
 vec3 fetchPrefilteredSpec(vec3 reflected, float roughness) {
   vec2 uv = cartesianToPolar(reflected);
   float mip = roughness * (MIP_LEVELS - 1.0);
   float mipF = floor(mip);
   float mipFrac = mip - mipF;
-  vec3 level0 = texture(uEnvironment.specular, texCoords(uv, mipF)).rgb;
-  vec3 level1 = texture(uEnvironment.specular, texCoords(uv, mipF + 1.0)).rgb;
+  vec3 level0 = rgbmToRgb(texture(uEnvironment.specular, texCoords(uv, mipF)), 8.0);
+  vec3 level1 = rgbmToRgb(texture(uEnvironment.specular, texCoords(uv, mipF + 1.0)), 8.0);
   return mix(level0, level1, mipFrac);
-  // return texture(uEnvironment.specular, texCoords(uv, mipF)).rgb;
 }
 
 // w_o: viewDirection
@@ -123,13 +127,12 @@ void main()
   vec3 f0 = mix(vec3(0.04), albedo, uMaterial.metallic);
 
   // IBL Diffuse
-  vec4 rgbmColor = texture(uEnvironment.diffuse, cartesianToPolar(normal));
-  vec3 irradiance = rgbmColor.rgb * rgbmColor.a * 8.0; // not sure about the coefficient
+  vec3 irradiance = rgbmToRgb(texture(uEnvironment.diffuse, cartesianToPolar(normal)), 8.0);
 
   // IBL Specular
   vec3 reflected = reflect(-w_o, normal);
   vec3 prefilteredSpec = fetchPrefilteredSpec(reflected, roughness);
-  vec2 brdf = texture(uEnvironment.brdfPreInt, vec2(max(dot(normal, -w_o), 0.0), roughness)).rg;
+  vec2 brdf = texture(uEnvironment.brdfPreInt, vec2(max(dot(normal, w_o), 0.0), roughness)).rg;
 
   vec3 radiance = vec3(0);
   for (int i = 0; i < POINT_LIGHT_COUNT; ++i) {
@@ -150,21 +153,21 @@ void main()
     kd *= 1.0 - uMaterial.metallic;
 
     // Diffuse (Lambert)
-    vec3 diffuseBRDFEval = kd * albedo / PI;
+    vec3 diffuseBRDFEval = kd * albedo;
 
     // IBL Diffuse
     diffuseBRDFEval *= irradiance;
 
     // Specular (Cook-Torrance GGX)
-    float d = normalDistributionGGX(normal, h, roughness);
-    float g = geometrySmith(normal, w_o, w_i, roughness);
-    vec3 specularBRDFEval = d * ks * g / (4.0 * max(dot(normal, w_o), 0.0) * cosTheta + 0.0001);
+    // float d = normalDistributionGGX(normal, h, roughness);
+    // float g = geometrySmith(normal, w_o, w_i, roughness);
+    // vec3 specularBRDFEval = d * ks * g / (4.0 * max(dot(normal, w_o), 0.0) * cosTheta + 0.0001);
 
     // IBL Specular
-    // vec3 specularBRDFEval = prefilteredSpec * (ks * brdf.x + brdf.y);
+    vec3 specularBRDFEval = prefilteredSpec * (ks * brdf.x + brdf.y);
 
     // Combined
-    radiance += (diffuseBRDFEval) * inRadiance * cosTheta;
+    radiance += (diffuseBRDFEval + specularBRDFEval) * inRadiance * cosTheta;
   }
 
   vec3 color = radiance;

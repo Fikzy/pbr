@@ -69,10 +69,10 @@ class Application {
     // this._lights.push(new PointLight(vec3.fromValues(0, 0, 4), 300));
 
     // Multiple point lights
-    this._lights.push(new PointLight(vec3.fromValues(-3, 3, 4), 300));
-    this._lights.push(new PointLight(vec3.fromValues(3, 3, 4), 300));
-    this._lights.push(new PointLight(vec3.fromValues(3, -3, 4), 300));
-    this._lights.push(new PointLight(vec3.fromValues(-3, -3, 4), 300));
+    this._lights.push(new PointLight(vec3.fromValues(-3, 3, 4), 100));
+    this._lights.push(new PointLight(vec3.fromValues(3, 3, 4), 100));
+    this._lights.push(new PointLight(vec3.fromValues(3, -3, 4), 100));
+    this._lights.push(new PointLight(vec3.fromValues(-3, -3, 4), 100));
 
     const sphereGeometry = new SphereGeometry(0.4, 256, 256);
     this._geometries.push(sphereGeometry);
