@@ -123,7 +123,8 @@ void main()
   vec3 f0 = mix(vec3(0.04), albedo, uMaterial.metallic);
 
   // IBL Diffuse
-  vec3 irradiance = texture(uEnvironment.diffuse, cartesianToPolar(normal)).rgb;
+  vec4 rgbmColor = texture(uEnvironment.diffuse, cartesianToPolar(normal));
+  vec3 irradiance = rgbmColor.rgb * rgbmColor.a * 8.0; // not sure about the coefficient
 
   // IBL Specular
   vec3 reflected = reflect(-w_o, normal);
@@ -155,15 +156,15 @@ void main()
     diffuseBRDFEval *= irradiance;
 
     // Specular (Cook-Torrance GGX)
-    // float d = normalDistributionGGX(normal, h, roughness);
-    // float g = geometrySmith(normal, w_o, w_i, roughness);
-    // vec3 specularBRDFEval = d * ks * g / (4.0 * max(dot(normal, w_o), 0.0) * cosTheta + 0.0001);
+    float d = normalDistributionGGX(normal, h, roughness);
+    float g = geometrySmith(normal, w_o, w_i, roughness);
+    vec3 specularBRDFEval = d * ks * g / (4.0 * max(dot(normal, w_o), 0.0) * cosTheta + 0.0001);
 
     // IBL Specular
-    vec3 specularBRDFEval = prefilteredSpec * (ks * brdf.x + brdf.y);
+    // vec3 specularBRDFEval = prefilteredSpec * (ks * brdf.x + brdf.y);
 
     // Combined
-    radiance += (diffuseBRDFEval + specularBRDFEval) * inRadiance * cosTheta;
+    radiance += (diffuseBRDFEval) * inRadiance * cosTheta;
   }
 
   vec3 color = radiance;
