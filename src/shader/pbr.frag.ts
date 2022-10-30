@@ -112,68 +112,39 @@ vec3 fetchPrefilteredSpec(vec3 reflected, float roughness) {
   return mix(level0, level1, mipFrac);
 }
 
-// w_o: viewDirection
-// w_i: light direction
-
 void main()
 {
   // **DO NOT** forget to do all your computation in linear space.
   vec3 albedo = sRGBToLinear(vec4(uMaterial.albedo, 1.0)).rgb;
+
   vec3 normal = normalize(vNormalWS);
-  vec3 w_o = normalize(uCamera.position - vPositionWS);
+  vec3 w_o = normalize(uCamera.position - vPositionWS); // viewDirection
 
   float roughness = clamp(uMaterial.roughness, 0.04, 1.0);
 
   vec3 f0 = mix(vec3(0.04), albedo, uMaterial.metallic);
 
+  vec3 ks = fresnelSchlick(max(dot(normal, w_o), 0.0), f0);
+  vec3 kd = (1.0 - ks) * (1.0 - uMaterial.metallic) * albedo;
+
   // IBL Diffuse
-  vec3 irradiance = rgbmToRgb(texture(uEnvironment.diffuse, cartesianToPolar(normal)), 8.0);
+  vec4 diffuseTexel = texture(uEnvironment.diffuse, cartesianToPolar(normal));
+  vec3 diffuseBRDFEval = kd * rgbmToRgb(diffuseTexel, 8.0);
 
   // IBL Specular
   vec3 reflected = reflect(-w_o, normal);
   vec3 prefilteredSpec = fetchPrefilteredSpec(reflected, roughness);
+
   vec2 brdf = texture(uEnvironment.brdfPreInt, vec2(max(dot(normal, w_o), 0.0), roughness)).rg;
+  vec3 specularBRDFEval = prefilteredSpec * (ks * brdf.x + brdf.y);
 
-  vec3 radiance = vec3(0);
-  for (int i = 0; i < POINT_LIGHT_COUNT; ++i) {
-    PointLight light = uPointLights[i];
+  vec3 gi = diffuseBRDFEval + specularBRDFEval;
 
-    vec3 w_i = normalize(light.position - vPositionWS); // light direction
-    vec3 h = normalize(w_o + w_i); // halfway vector
-    float cosTheta = max(dot(normal, w_i), 0.0);
-    
-    // Incoming radiance
-    float lightDistance = length(light.position - vPositionWS);
-    float attenuation = 1.0 / (4.0 * PI * lightDistance * lightDistance); // 1 / 4PI * r^2
-    vec3 inRadiance = light.color * light.intensity * attenuation;
-
-    // Fresnel coefs
-    vec3 ks = fresnelSchlick(max(dot(h, w_o), 0.0), f0);
-    vec3 kd = (1.0 - ks);
-    kd *= 1.0 - uMaterial.metallic;
-
-    // Diffuse (Lambert)
-    vec3 diffuseBRDFEval = kd * albedo;
-
-    // IBL Diffuse
-    diffuseBRDFEval *= irradiance;
-
-    // Specular (Cook-Torrance GGX)
-    // float d = normalDistributionGGX(normal, h, roughness);
-    // float g = geometrySmith(normal, w_o, w_i, roughness);
-    // vec3 specularBRDFEval = d * ks * g / (4.0 * max(dot(normal, w_o), 0.0) * cosTheta + 0.0001);
-
-    // IBL Specular
-    vec3 specularBRDFEval = prefilteredSpec * (ks * brdf.x + brdf.y);
-
-    // Combined
-    radiance += (diffuseBRDFEval + specularBRDFEval) * inRadiance * cosTheta;
-  }
-
-  vec3 color = radiance;
+  // Reinhard Tonemapping
+  // gi = gi / (gi + 1.0);
 
   // **DO NOT** forget to apply gamma correction as last step.
-  outFragColor.rgba = LinearTosRGB(vec4(color, 1.0));
+  outFragColor.rgba = LinearTosRGB(vec4(gi, 1.0));
 
   // outFragColor.rgba = vec4(normal, 1.0);
 }

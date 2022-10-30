@@ -66,13 +66,13 @@ class Application {
     };
 
     // Single point light
-    // this._lights.push(new PointLight(vec3.fromValues(0, 0, 4), 300));
+    this._lights.push(new PointLight(vec3.fromValues(0, 0, 4), 300));
 
     // Multiple point lights
-    this._lights.push(new PointLight(vec3.fromValues(-3, 3, 4), 100));
-    this._lights.push(new PointLight(vec3.fromValues(3, 3, 4), 100));
-    this._lights.push(new PointLight(vec3.fromValues(3, -3, 4), 100));
-    this._lights.push(new PointLight(vec3.fromValues(-3, -3, 4), 100));
+    // this._lights.push(new PointLight(vec3.fromValues(-3, 3, 4), 300));
+    // this._lights.push(new PointLight(vec3.fromValues(3, 3, 4), 300));
+    // this._lights.push(new PointLight(vec3.fromValues(3, -3, 4), 300));
+    // this._lights.push(new PointLight(vec3.fromValues(-3, -3, 4), 300));
 
     const sphereGeometry = new SphereGeometry(0.4, 256, 256);
     this._geometries.push(sphereGeometry);
@@ -241,10 +241,10 @@ class Application {
     // material.add(this._guiProperties, 'roughness', 0.0, 1.0);
     // material.add(this._guiProperties, 'ao', 0.0, 1.0);
 
-    const lightOffset = gui.addFolder('Light Offset');
-    lightOffset.add(this._guiProperties, 'lightOffsetX', -5, 5);
-    lightOffset.add(this._guiProperties, 'lightOffsetY', -5, 5);
-    lightOffset.add(this._guiProperties, 'lightOffsetZ', -5, 5);
+    // const lightOffset = gui.addFolder('Light Offset');
+    // lightOffset.add(this._guiProperties, 'lightOffsetX', -5, 5);
+    // lightOffset.add(this._guiProperties, 'lightOffsetY', -5, 5);
+    // lightOffset.add(this._guiProperties, 'lightOffsetZ', -5, 5);
 
     return gui;
   }
