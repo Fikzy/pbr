@@ -66,7 +66,9 @@ export class GLContext {
   private _textureUnitSlot: number;
 
   public constructor(canvas: HTMLCanvasElement) {
-    this._gl = canvas.getContext('webgl2') as WebGL2RenderingContext;
+    this._gl = canvas.getContext('webgl2', {
+      // powerPreference: 'high-performance'
+    }) as WebGL2RenderingContext;
     // this._gl.clearColor(0.1, 0.1, 0.1, 1.0);
     this._gl.clearColor(111 / 255, 109 / 255, 140 / 255, 1.0);
 

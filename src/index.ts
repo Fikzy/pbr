@@ -6,15 +6,17 @@ import { SphereGeometry } from './geometries/sphere';
 import { GLContext } from './gl';
 import { PointLight } from './lights/lights';
 import { Model } from './model';
-import { PBRShader } from './shader/pbr-shader';
+import { LightsShader } from './shader/lights-shader';
+import { IBLShader } from './shader/pbr-shader-ibl';
+import { Shader } from './shader/shader';
 import { Texture, Texture2D } from './textures/texture';
 import { UniformType } from './types';
 
 interface GUIProperties {
+  shader: string;
+
   albedo: number[];
-  metallic: number;
-  roughness: number;
-  ao: number;
+
   lightOffsetX: number;
   lightOffsetY: number;
   lightOffsetZ: number;
@@ -33,7 +35,9 @@ class Application {
    */
   private _context: GLContext;
 
-  private _shader: PBRShader;
+  private _shader: Shader;
+  private _shaders: { [key: string]: Shader };
+
   private _geometries: Geometry[] = [];
   private _uniforms: Record<string, UniformType | Texture>;
   private _lights: PointLight[] = [];
@@ -60,19 +64,18 @@ class Application {
       'uMaterial.albedo': vec3.create(),
       'uMaterial.roughness': 0.5,
       'uMaterial.metallic': 0.5,
-      'uMaterial.ao': 1.0,
       'uModel.localToProjection': mat4.create(),
       'uModel.view': mat4.create()
     };
 
     // Single point light
-    this._lights.push(new PointLight(vec3.fromValues(0, 0, 4), 300));
+    // this._lights.push(new PointLight(vec3.fromValues(0, 0, 4), 300));
 
     // Multiple point lights
-    // this._lights.push(new PointLight(vec3.fromValues(-3, 3, 4), 300));
-    // this._lights.push(new PointLight(vec3.fromValues(3, 3, 4), 300));
-    // this._lights.push(new PointLight(vec3.fromValues(3, -3, 4), 300));
-    // this._lights.push(new PointLight(vec3.fromValues(-3, -3, 4), 300));
+    this._lights.push(new PointLight(vec3.fromValues(-3, 3, 4), 300));
+    this._lights.push(new PointLight(vec3.fromValues(3, 3, 4), 300));
+    this._lights.push(new PointLight(vec3.fromValues(3, -3, 4), 300));
+    this._lights.push(new PointLight(vec3.fromValues(-3, -3, 4), 300));
 
     const sphereGeometry = new SphereGeometry(0.4, 256, 256);
     this._geometries.push(sphereGeometry);
@@ -92,18 +95,27 @@ class Application {
       }
     }
 
-    this._shader = new PBRShader();
-    this._shader.pointLightCount = this._lights.length;
+    const lightsShader = new LightsShader();
+    lightsShader.pointLightCount = this._lights.length;
+
+    const iblShader = new IBLShader();
+
+    this._shaders = {
+      Lights: lightsShader,
+      IBL: iblShader
+    };
 
     this._guiProperties = {
+      shader: 'IBL',
+
       albedo: [255, 255, 255],
-      metallic: 0.5,
-      roughness: 0.5,
-      ao: 1.0,
+
       lightOffsetX: 0,
       lightOffsetY: 0,
       lightOffsetZ: 0
     };
+
+    this._shader = this._shaders[this._guiProperties.shader];
 
     this._createGUI();
   }
@@ -115,7 +127,10 @@ class Application {
     this._geometries.forEach((geometry) =>
       this._context.uploadGeometry(geometry)
     );
-    this._context.compileProgram(this._shader);
+
+    Object.values(this._shaders).forEach((shader) =>
+      this._context.compileProgram(shader)
+    );
 
     this._diffuseTexture = await Texture2D.load(
       'assets/env/Alexs_Apt_2k-diffuse-RGBM.png'
@@ -186,19 +201,21 @@ class Application {
     this._uniforms['uCamera.position'] = camera.transform.position;
 
     // Feed lights to shader
-    this._lights.forEach((light, index) => {
-      this._uniforms[`uPointLights[${index}].intensity`] = light.intensity;
-      this._uniforms[`uPointLights[${index}].color`] = light.color;
+    if (this._guiProperties.shader === 'Lights') {
+      this._lights.forEach((light, index) => {
+        this._uniforms[`uPointLights[${index}].intensity`] = light.intensity;
+        this._uniforms[`uPointLights[${index}].color`] = light.color;
 
-      // this._uniforms[`uPointLights[${index}].position`] = light.positionWS;
+        // this._uniforms[`uPointLights[${index}].position`] = light.positionWS;
 
-      const lightOffset = vec3.fromValues(
-        light.positionWS[0] + props.lightOffsetX,
-        light.positionWS[1] + props.lightOffsetY,
-        light.positionWS[2] + props.lightOffsetZ
-      );
-      this._uniforms[`uPointLights[${index}].position`] = lightOffset;
-    });
+        const lightOffset = vec3.fromValues(
+          light.positionWS[0] + props.lightOffsetX,
+          light.positionWS[1] + props.lightOffsetY,
+          light.positionWS[2] + props.lightOffsetZ
+        );
+        this._uniforms[`uPointLights[${index}].position`] = lightOffset;
+      });
+    }
 
     // Feed models to shader and draw them
     this._models.forEach((model) => {
@@ -215,7 +232,6 @@ class Application {
       );
       this._uniforms['uMaterial.metallic'] = model.material.metallic;
       this._uniforms['uMaterial.roughness'] = model.material.roughness;
-      this._uniforms['uMaterial.ao'] = model.material.ao;
 
       this._context.draw(model.geometry, this._shader, this._uniforms);
     });
@@ -235,16 +251,31 @@ class Application {
   private _createGUI(): GUI {
     const gui = new GUI();
 
-    const material = gui.addFolder('Material');
-    material.addColor(this._guiProperties, 'albedo');
-    // material.add(this._guiProperties, 'metallic', 0.0, 1.0);
-    // material.add(this._guiProperties, 'roughness', 0.0, 1.0);
-    // material.add(this._guiProperties, 'ao', 0.0, 1.0);
+    const shaderSelector = gui.add(
+      this._guiProperties,
+      'shader',
+      Object.keys(this._shaders)
+    );
 
-    // const lightOffset = gui.addFolder('Light Offset');
-    // lightOffset.add(this._guiProperties, 'lightOffsetX', -5, 5);
-    // lightOffset.add(this._guiProperties, 'lightOffsetY', -5, 5);
-    // lightOffset.add(this._guiProperties, 'lightOffsetZ', -5, 5);
+    const materialFolder = gui.addFolder('Material');
+    materialFolder.addColor(this._guiProperties, 'albedo');
+
+    const lightOffsetFolder = gui.addFolder('Light Offset');
+    lightOffsetFolder.add(this._guiProperties, 'lightOffsetX', -5, 5);
+    lightOffsetFolder.add(this._guiProperties, 'lightOffsetY', -5, 5);
+    lightOffsetFolder.add(this._guiProperties, 'lightOffsetZ', -5, 5);
+
+    if (this._guiProperties.shader === 'Lights') lightOffsetFolder.show();
+    else lightOffsetFolder.hide();
+
+    shaderSelector.onChange((shader) => {
+      console.info(`Changed to '${shader}' shader`);
+
+      this._shader = this._shaders[shader];
+
+      if (shader === 'Lights') lightOffsetFolder.show();
+      else lightOffsetFolder.hide();
+    });
 
     return gui;
   }

@@ -11,19 +11,9 @@ struct Material
   vec3 albedo;
   float metallic;
   float roughness;
-  float ao;
 };
 
 uniform Material uMaterial;
-
-struct PointLight
-{
-  vec3 color;
-  float intensity;
-  vec3 position;
-};
-
-uniform PointLight[POINT_LIGHT_COUNT] uPointLights;
 
 struct Camera
 {
@@ -62,28 +52,6 @@ vec2 cartesianToPolar(vec3 n) {
   uv.x = atan(n.z, n.x) * RECIPROCAL_PI2 + 0.5;
   uv.y = asin(n.y) * RECIPROCAL_PI + 0.5;
   return uv;
-}
-
-float normalDistributionGGX(vec3 n, vec3 h, float roughness)
-{
-  float a = roughness * roughness; // artistic roughness remapping
-  float a2 = a * a;
-  float ndoth = max(dot(n, h), 0.0);
-  float denom = (ndoth * ndoth * (a2 - 1.0) + 1.0);
-  return a2 / (PI * denom * denom);
-}
-
-float geometrySchlickGGX(float ndotv, float roughness)
-{
-  float r = (roughness + 1.0);
-  float k = (r * r) / 8.0;
-  return ndotv / (ndotv * (1.0 - k) + k);
-}
-float geometrySmith(vec3 n, vec3 v, vec3 l, float roughness)
-{
-  float ndotv = max(dot(n, v), 0.0);
-  float ndotl = max(dot(n, l), 0.0);
-  return geometrySchlickGGX(ndotl, roughness) * geometrySchlickGGX(ndotv, roughness);
 }
 
 vec3 fresnelSchlick(float cosTheta, vec3 f0)
@@ -145,7 +113,5 @@ void main()
 
   // **DO NOT** forget to apply gamma correction as last step.
   outFragColor.rgba = LinearTosRGB(vec4(gi, 1.0));
-
-  // outFragColor.rgba = vec4(normal, 1.0);
 }
 `;
