@@ -108,8 +108,13 @@ void main()
 
   vec3 gi = diffuseBRDFEval + specularBRDFEval;
 
-  // Reinhard Tonemapping
+  // Reinhard Tonemapping (meh results)
   // gi = gi / (gi + 1.0);
+
+  /* ACES Tonemapping
+   * https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
+   */
+  gi = (gi * (2.51 * gi + 0.03)) / (gi * (2.43 * gi + 0.59) + 0.14);
 
   // **DO NOT** forget to apply gamma correction as last step.
   outFragColor.rgba = LinearTosRGB(vec4(gi, 1.0));

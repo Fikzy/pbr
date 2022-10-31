@@ -121,9 +121,17 @@ void main()
     radiance += (diffuseBRDFEval + specularBRDFEval) * inRadiance * cosTheta;
   }
 
-  vec3 color = radiance;
+  vec3 c = radiance;
+
+  // Reinhard Tonemapping (meh results)
+  // c = c / (c + 1.0);
+
+  /* ACES Tonemapping
+   * https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
+   */
+  c = (c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14);
 
   // **DO NOT** forget to apply gamma correction as last step.
-  outFragColor.rgba = LinearTosRGB(vec4(color, 1.0));
+  outFragColor.rgba = LinearTosRGB(vec4(c, 1.0));
 }
 `;
