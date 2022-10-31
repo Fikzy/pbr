@@ -19,7 +19,7 @@ struct PointLight
 {
   vec3 color;
   float intensity;
-  vec3 position;
+  vec3 positionWS;
 };
 
 uniform PointLight[POINT_LIGHT_COUNT] uPointLights;
@@ -95,12 +95,12 @@ void main()
   for (int i = 0; i < POINT_LIGHT_COUNT; ++i) {
     PointLight light = uPointLights[i];
 
-    vec3 w_i = normalize(light.position - vPositionWS); // light direction
+    vec3 w_i = normalize(light.positionWS - vPositionWS); // light direction
     vec3 h = normalize(w_o + w_i); // halfway vector
     float cosTheta = max(dot(normal, w_i), 0.0);
 
     // Incoming radiance
-    float lightDistance = length(light.position - vPositionWS);
+    float lightDistance = length(light.positionWS - vPositionWS);
     float attenuation = 1.0 / (4.0 * PI * lightDistance * lightDistance); // 1 / 4PI * r^2
     vec3 inRadiance = light.color * light.intensity * attenuation;
 

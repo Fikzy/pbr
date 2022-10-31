@@ -29,6 +29,8 @@ export abstract class PonctualLight {
     this.intensity = intensity;
     return this;
   }
+
+  abstract feedUniforms(uniforms: Record<string, any>, index: number): void;
 }
 
 /**
@@ -67,6 +69,12 @@ export class DirectionalLight extends PonctualLight {
     vec3.normalize(this.directionWS, this.directionWS);
     return this;
   }
+
+  public feedUniforms(uniforms: Record<string, any>, index: number) {
+    uniforms[`uDirectionalLights[${index}].color`] = this.color;
+    uniforms[`uDirectionalLights[${index}].intensity`] = this.intensity;
+    uniforms[`uDirectionalLights[${index}].directionWS`] = this.directionWS;
+  }
 }
 
 /**
@@ -102,5 +110,11 @@ export class PointLight extends PonctualLight {
   public setPosition(x: number, y: number, z: number): this {
     vec3.set(this.positionWS, x, y, z);
     return this;
+  }
+
+  public feedUniforms(uniforms: Record<string, any>, index: number) {
+    uniforms[`uPointLights[${index}].color`] = this.color;
+    uniforms[`uPointLights[${index}].intensity`] = this.intensity;
+    uniforms[`uPointLights[${index}].positionWS`] = this.positionWS;
   }
 }
