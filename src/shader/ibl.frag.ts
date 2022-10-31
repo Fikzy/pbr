@@ -54,9 +54,8 @@ vec2 cartesianToPolar(vec3 n) {
   return uv;
 }
 
-vec3 fresnelSchlick(float cosTheta, vec3 f0)
-{
-  return f0 + (1.0 - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+vec3 fresnelSchlick(float cosTheta, vec3 f0, float roughness) {
+  return f0 + (max(vec3(1.0 - roughness), f0) - f0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 vec2 texCoords(vec2 uv, float l) {
@@ -92,11 +91,12 @@ void main()
 
   vec3 f0 = mix(vec3(0.04), albedo, uMaterial.metallic);
 
-  vec3 ks = fresnelSchlick(max(dot(normal, w_o), 0.0), f0);
+  vec3 ks = fresnelSchlick(max(dot(normal, w_o), 0.0), f0, roughness);
   vec3 kd = (1.0 - ks) * (1.0 - uMaterial.metallic) * albedo;
 
   // IBL Diffuse
-  vec4 diffuseTexel = texture(uEnvironment.diffuse, cartesianToPolar(normal));
+  vec2 uvDiffuse = vec2(0., 1.) + vec2(1., -1.) * cartesianToPolar(normal);
+  vec4 diffuseTexel = texture(uEnvironment.diffuse, uvDiffuse);
   vec3 diffuseBRDFEval = kd * rgbmToRgb(diffuseTexel, 8.0);
 
   // IBL Specular
