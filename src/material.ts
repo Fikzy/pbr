@@ -8,11 +8,16 @@ export class Material {
   public roughness: number;
   public ao: number;
 
-  public constructor() {
-    this.albedo = [1.0, 1.0, 1.0];
-    this.metallic = 0.5;
-    this.roughness = 0.5;
-    this.ao = 1.0;
+  public constructor(
+    albedo: number[] = [1.0, 1.0, 1.0],
+    metallic: number = 0.5,
+    roughness: number = 0.5,
+    ao: number = 1.0
+  ) {
+    this.albedo = albedo;
+    this.metallic = metallic;
+    this.roughness = roughness;
+    this.ao = ao;
   }
 
   public feedUniforms(uniforms: Record<string, UniformType | Texture>) {

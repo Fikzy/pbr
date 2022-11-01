@@ -24,10 +24,14 @@ export class Transform {
    */
   private _matrix: mat4;
 
-  public constructor() {
-    this.position = vec3.create();
-    this.scale = vec3.set(vec3.create(), 1.0, 1.0, 1.0);
-    this.rotation = quat.create();
+  public constructor(
+    position: vec3 = vec3.create(),
+    scale: vec3 = vec3.fromValues(1.0, 1.0, 1.0),
+    rotation: quat = quat.create()
+  ) {
+    this.position = position;
+    this.scale = scale;
+    this.rotation = rotation;
     this._matrix = mat4.create();
   }
 

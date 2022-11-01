@@ -12,10 +12,14 @@ export class Model {
   public transform: Transform;
   public material: Material;
 
-  public constructor(geometry: Geometry) {
+  public constructor(
+    geometry: Geometry,
+    transform: Transform = new Transform(),
+    material: Material = new Material()
+  ) {
     this.geometry = geometry;
-    this.transform = new Transform();
-    this.material = new Material();
+    this.transform = transform;
+    this.material = material;
   }
 
   public update() {

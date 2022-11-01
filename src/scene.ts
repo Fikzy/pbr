@@ -9,17 +9,17 @@ import { UniformType } from './types';
 
 export class Scene {
   public camera: Camera;
+  public shader: Shader;
   public models: Model[];
   public lights: PonctualLight[];
-  public shader: Shader;
-  public environment: Environment | null;
+  public environment?: Environment;
 
   public constructor(
     camera: Camera,
-    models: Model[],
-    lights: PonctualLight[],
     shader: Shader,
-    environment: Environment | null
+    models: Model[],
+    lights: PonctualLight[] = [],
+    environment?: Environment
   ) {
     this.camera = camera;
     this.models = models;

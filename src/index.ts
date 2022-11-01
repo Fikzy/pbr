@@ -5,11 +5,13 @@ import { Environment } from './environment';
 import { SphereGeometry } from './geometries/sphere';
 import { GLContext } from './gl';
 import { PointLight } from './lights/lights';
+import { Material } from './material';
 import { Model } from './model';
 import { Scene } from './scene';
 import { LightsShader } from './shader/lights-shader';
 import { IBLShader } from './shader/pbr-shader-ibl';
 import { Shader } from './shader/shader';
+import { Transform } from './transform';
 
 interface GUIProperties {
   scene: string;
@@ -55,34 +57,32 @@ class Application {
     const iblShader = new IBLShader();
     this.shaders.push(iblShader);
 
-    const sphereGeometry = new SphereGeometry(0.4, 256, 256);
     const N = 5;
     for (let y = 0; y < N; y++) {
       for (let x = 0; x < N; x++) {
-        const model = new Model(sphereGeometry);
         const offset = (N - 1) / 2;
-        model.transform.position = vec3.fromValues(x - offset, y - offset, 0);
-
-        model.material.metallic = y / (N - 1);
-        model.material.roughness = x / (N - 1);
-
-        this.demoSpheres.push(model);
+        this.demoSpheres.push(
+          new Model(
+            new SphereGeometry(0.4, 256, 256),
+            new Transform(vec3.fromValues(x - offset, y - offset, 0)),
+            new Material(this.guiProperties.albedo, y / (N - 1), x / (N - 1))
+          )
+        );
       }
     }
 
     this.scenes = {
       Lights: new Scene(
         this.camera,
-        this.demoSpheres,
-        this.demoLights,
         lightsShader,
-        null
+        this.demoSpheres,
+        this.demoLights
       ),
       IBL: new Scene(
         this.camera,
+        iblShader,
         this.demoSpheres,
         [],
-        iblShader,
         new Environment(
           'assets/env/Alexs_Apt_2k-diffuse-RGBM.png',
           'assets/env/Alexs_Apt_2k-specular-RGBM.png',
