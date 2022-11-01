@@ -8,7 +8,7 @@ import { PointLight } from './lights/lights';
 import { Material } from './material';
 import { Model } from './model';
 import { Scene } from './scene';
-import { LightsShader } from './shader/lights-shader';
+import { DLShader } from './shader/dl-shader';
 import { IBLShader } from './shader/pbr-shader-ibl';
 import { Shader } from './shader/shader';
 import { Transform } from './transform';
@@ -50,9 +50,9 @@ class Application {
     this.demoLights.push(new PointLight(vec3.fromValues(3, -3, 4), 400));
     this.demoLights.push(new PointLight(vec3.fromValues(-3, -3, 4), 400));
 
-    const lightsShader = new LightsShader();
-    lightsShader.pointLightCount = this.demoLights.length;
-    this.shaders.push(lightsShader);
+    const dlShader = new DLShader();
+    dlShader.pointLightCount = this.demoLights.length;
+    this.shaders.push(dlShader);
 
     const iblShader = new IBLShader();
     this.shaders.push(iblShader);
@@ -72,12 +72,7 @@ class Application {
     }
 
     this.scenes = {
-      Lights: new Scene(
-        this.camera,
-        lightsShader,
-        this.demoSpheres,
-        this.demoLights
-      ),
+      DL: new Scene(this.camera, dlShader, this.demoSpheres, this.demoLights),
       IBL: new Scene(
         this.camera,
         iblShader,

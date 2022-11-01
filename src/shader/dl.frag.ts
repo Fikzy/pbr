@@ -31,15 +31,6 @@ struct Camera
 
 uniform Camera uCamera;
 
-struct Environment
-{
-  sampler2D diffuse;
-  sampler2D specular;
-  sampler2D brdfPreInt;
-};
-
-uniform Environment uEnvironment;
-
 const float PI = 3.14159265359;
 
 // From three.js
