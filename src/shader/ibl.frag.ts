@@ -95,18 +95,29 @@ void main()
   vec3 kd = (1.0 - ks) * (1.0 - uMaterial.metallic) * albedo;
 
   // IBL Diffuse
-  vec2 uvDiffuse = vec2(0., 1.) + vec2(1., -1.) * cartesianToPolar(normal); // flip y axis
-  vec4 diffuseTexel = texture(uEnvironment.diffuse, uvDiffuse);
-  vec3 diffuseBRDFEval = kd * rgbmToRgb(diffuseTexel, 8.0);
+  #ifdef USE_DIFFUSE
+    vec2 uvDiffuse = vec2(0., 1.) + vec2(1., -1.) * cartesianToPolar(normal); // flip y axis
+    vec4 diffuseTexel = texture(uEnvironment.diffuse, uvDiffuse);
+    vec3 diffuseBRDFEval = kd * rgbmToRgb(diffuseTexel, 8.0);
+  #endif // USE_DIFFUSE
 
   // IBL Specular
-  vec3 reflected = reflect(-w_o, normal);
-  vec3 prefilteredSpec = fetchPrefilteredSpec(reflected, roughness);
+  #ifdef USE_SPECULAR
+    vec3 reflected = reflect(-w_o, normal);
+    vec3 prefilteredSpec = fetchPrefilteredSpec(reflected, roughness);
 
-  vec2 brdf = texture(uEnvironment.brdfPreInt, vec2(max(dot(normal, w_o), 0.0), roughness)).rg;
-  vec3 specularBRDFEval = prefilteredSpec * (ks * brdf.x + brdf.y);
+    vec2 brdf = texture(uEnvironment.brdfPreInt, vec2(max(dot(normal, w_o), 0.0), roughness)).rg;
+    vec3 specularBRDFEval = prefilteredSpec * (ks * brdf.x + brdf.y);
+  #endif // USE_SPECULAR
 
-  vec3 gi = diffuseBRDFEval + specularBRDFEval;
+  vec3 gi;
+  
+  #ifdef USE_DIFFUSE
+    gi += diffuseBRDFEval;
+  #endif // USE_DIFFUSE
+  #ifdef USE_SPECULAR
+    gi += specularBRDFEval;
+  #endif // USE_SPECULAR
 
   // Reinhard Tonemapping (meh results)
   // gi = gi / (gi + 1.0);

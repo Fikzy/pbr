@@ -8,6 +8,16 @@ uniform sampler2D uEnvironmentMap;
 
 const float PI = 3.14159265359;
 
+// http://graphicrants.blogspot.com/2009/04/rgbm-color-encoding.html
+vec4 rgbmEncode(vec3 color, float maxValue) {
+  vec4 rgbm;
+  color *= 1.0 / maxValue;
+  rgbm.a = clamp(max(max(color.r, color.g), max(color.b, 1e-6)), 0.0, 1.0);
+  rgbm.a = ceil(rgbm.a * 255.0) / 255.0;
+  rgbm.rgb = color / rgbm.a;
+  return rgbm;
+}
+
 void main()
 {
   vec3 acc = vec3(0.0);
@@ -25,6 +35,6 @@ void main()
   }
   acc = PI * acc * (1.0 / float(count));
 
-  outFragColor.rgba = vec4(acc, 1.0);
+  outFragColor.rgba = rgbmEncode(acc, 8.0);
 }
 `;

@@ -10,7 +10,6 @@ import { Model } from './model';
 import { Scene } from './scene';
 import { DLShader } from './shader/dl-shader';
 import { IBLDiffuseGenShader } from './shader/ibl-diffuse-gen-shader';
-import { IBLGenShader } from './shader/ibl-gen-shader';
 import { IBLShader } from './shader/ibl-shader';
 import { QuadRenderShader } from './shader/quad-render-shader';
 import { Shader } from './shader/shader';
@@ -63,7 +62,7 @@ class Application {
     const iblShader = new IBLShader();
     this.shaders.push(iblShader);
 
-    const iblGenShader = new IBLGenShader();
+    const iblGenShader = new IBLShader(true, false);
     this.shaders.push(iblGenShader);
 
     const quadRenderShader = new QuadRenderShader();
@@ -83,7 +82,9 @@ class Application {
       }
     }
 
-    const diffuseTexture = this.convolveDiffuseEnvMap();
+    const diffuseEnvMap = this.convolveDiffuseEnvMap(
+      'assets/env/alps_field.png'
+    );
 
     this.scenes = {
       'Direct Lighting': new Scene(
@@ -115,7 +116,7 @@ class Application {
         this.demoSpheres,
         [],
         new TextureLoader({
-          'uEnvironment.diffuse': diffuseTexture
+          'uEnvironment.diffuse': diffuseEnvMap
         })
       ),
       'Render Quad': new Scene(
@@ -129,7 +130,7 @@ class Application {
         ],
         [],
         new TextureLoader({
-          uTexture: diffuseTexture
+          uTexture: diffuseEnvMap
         })
       )
     };
@@ -139,8 +140,10 @@ class Application {
     this._createGUI();
   }
 
-  async convolveDiffuseEnvMap(): Promise<Texture2D<PixelArray> | null> {
-    const envmap = await Texture2D.load('assets/env/neon_photostudio.png');
+  async convolveDiffuseEnvMap(
+    envmapUrl: string
+  ): Promise<Texture2D<PixelArray> | null> {
+    const envmap = await Texture2D.load(envmapUrl);
     if (!envmap) return Promise.resolve(null);
     this.context.uploadTexture(envmap);
 
@@ -153,7 +156,7 @@ class Application {
     // create empty texture to render to
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); // flip Y
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
@@ -209,6 +212,7 @@ class Application {
     this.context.resize();
 
     const diff = new Texture2D(pixels, width, height, format, format, type);
+    diff.flipY = true;
     this.context.uploadTexture(diff);
     return diff;
   }
