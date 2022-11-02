@@ -13,7 +13,7 @@ export class TextureLoader {
     uniTexPromises: Record<
       string,
       Promise<Texture2D<HTMLElement | PixelArray> | null>
-    >
+    > = {}
   ) {
     this.texturePromises = uniTexPromises;
     this.textures = {};

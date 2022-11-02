@@ -50,7 +50,7 @@ class Application {
     this.camera = new Camera();
 
     this.guiProperties = {
-      scene: 'IBL Diffuse Map',
+      scene: 'Direct Lighting',
       albedo: [255, 255, 255],
       cameraSwivel: 0,
       cameraDistance: 8
@@ -75,6 +75,12 @@ class Application {
     const quadRenderShader = new QuadRenderShader();
     this.shaders.push(quadRenderShader);
 
+    const sphere = new SphereGeometry(0.4, 256, 256);
+    this.context.uploadGeometry(sphere);
+
+    const plane = new PlaneGeometry();
+    this.context.uploadGeometry(plane);
+
     const Nx = 5;
     const Ny = 5;
     for (let y = 0; y < Ny; y++) {
@@ -85,17 +91,13 @@ class Application {
         const metalness = y / (Ny - 1);
         this.demoSpheres.push(
           new Model(
-            new SphereGeometry(0.4, 256, 256),
+            sphere,
             new Transform(vec3.fromValues(x - offsetX, y - offsetY, 0)),
             new Material(this.guiProperties.albedo, metalness, roughness)
           )
         );
       }
     }
-
-    const diffuseEnvMap = this.convolveDiffuseEnvMap(
-      'assets/env/alps_field.png'
-    );
 
     this.scenes = {
       'Direct Lighting': new Scene(
@@ -121,43 +123,20 @@ class Application {
           )
         })
       ),
-      'IBL Gen': new Scene(
-        this.camera,
-        iblGenShader,
-        this.demoSpheres,
-        [],
-        new TextureLoader({
-          'uEnvironment.diffuse': diffuseEnvMap
-        })
-      ),
-      'IBL Diffuse Map': new Scene(
-        this.camera,
-        quadRenderShader,
-        [
-          new Model(
-            new PlaneGeometry(),
-            new Transform(vec3.create(), vec3.fromValues(8, 4, 1))
-          )
-        ],
-        [],
-        new TextureLoader({
-          uTexture: diffuseEnvMap
-        })
-      )
+      'IBL Gen': new Scene(this.camera, iblGenShader, this.demoSpheres),
+      'IBL Diffuse Map': new Scene(this.camera, quadRenderShader, [
+        new Model(plane, new Transform(vec3.create(), vec3.fromValues(8, 4, 1)))
+      ])
     };
 
     this.scene = this.scenes[this.guiProperties.scene];
 
-    this._createGUI();
+    this.createGUI();
   }
 
-  async convolveDiffuseEnvMap(
-    envmapUrl: string
-  ): Promise<Texture2D<PixelArray> | null> {
-    const envmap = await Texture2D.load(envmapUrl);
-    if (!envmap) return Promise.resolve(null);
-    this.context.uploadTexture(envmap);
-
+  private convolveDiffuseEnvMap(
+    envmap: Texture2D<HTMLElement>
+  ): Texture2D<PixelArray> {
     const gl = this.context.gl;
     const width = envmap.width;
     const height = envmap.height;
@@ -167,7 +146,6 @@ class Application {
     // create empty texture to render to
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    // gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); // flip Y
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
@@ -234,6 +212,18 @@ class Application {
    * Initializes the application.
    */
   async init() {
+    const envmap = await Texture2D.load('assets/env/alps_field.png');
+
+    if (envmap) {
+      this.context.uploadTexture(envmap);
+      const diffuseEnvMap = this.convolveDiffuseEnvMap(envmap);
+
+      this.scenes['IBL Gen'].textureLoader.textures['uEnvironment.diffuse'] =
+        diffuseEnvMap;
+      this.scenes['IBL Diffuse Map'].textureLoader.textures.uTexture =
+        diffuseEnvMap;
+    }
+
     Object.values(this.scenes).forEach((scene) => scene.init(this.context));
 
     Object.values(this.shaders).forEach((shader) =>
@@ -287,7 +277,7 @@ class Application {
     this.scene?.render(this.context);
   }
 
-  swivelCamera() {
+  private swivelCamera() {
     const x = Math.sin(this.cameraSwivel) * this.cameraDistance;
     const z = Math.cos(this.cameraSwivel) * this.cameraDistance;
     vec3.set(this.camera.transform.position, x, 0.0, z);
@@ -310,7 +300,7 @@ class Application {
    *
    * @private
    */
-  private _createGUI(): GUI {
+  private createGUI(): GUI {
     const gui = new GUI();
 
     const sceneSelector = gui.add(
@@ -361,7 +351,6 @@ app.init().then(() => {
 /**
  * Handles resize.
  */
-
 const resizeObserver = new ResizeObserver((entries) => {
   if (entries.length > 0) {
     const entry = entries[0];
