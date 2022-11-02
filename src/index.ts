@@ -1,5 +1,5 @@
 import { GUI } from 'dat.gui';
-import { vec3 } from 'gl-matrix';
+import { quat, vec3 } from 'gl-matrix';
 import { Camera } from './camera';
 import { PlaneGeometry } from './geometries/plane';
 import { SphereGeometry } from './geometries/sphere';
@@ -21,6 +21,8 @@ import { PixelArray } from './types';
 interface GUIProperties {
   scene: string;
   albedo: number[];
+  cameraSwivel: number;
+  cameraDistance: number;
 }
 
 /**
@@ -33,6 +35,9 @@ class Application {
   private guiProperties: GUIProperties;
 
   private camera: Camera;
+  private cameraSwivel: number = 0;
+  private cameraDistance: number = 8;
+
   private scene: Scene | null = null;
   private scenes: { [key: string]: Scene };
   private shaders: Shader[] = [];
@@ -45,8 +50,10 @@ class Application {
     this.camera = new Camera();
 
     this.guiProperties = {
-      scene: 'Render Quad',
-      albedo: [255, 255, 255]
+      scene: 'IBL Diffuse Map',
+      albedo: [255, 255, 255],
+      cameraSwivel: 0,
+      cameraDistance: 8
     };
 
     // Multiple point lights
@@ -68,15 +75,19 @@ class Application {
     const quadRenderShader = new QuadRenderShader();
     this.shaders.push(quadRenderShader);
 
-    const N = 5;
-    for (let y = 0; y < N; y++) {
-      for (let x = 0; x < N; x++) {
-        const offset = (N - 1) / 2;
+    const Nx = 5;
+    const Ny = 5;
+    for (let y = 0; y < Ny; y++) {
+      for (let x = 0; x < Nx; x++) {
+        const offsetX = (Nx - 1) / 2;
+        const offsetY = (Ny - 1) / 2;
+        const roughness = x / (Nx - 1);
+        const metalness = y / (Ny - 1);
         this.demoSpheres.push(
           new Model(
             new SphereGeometry(0.4, 256, 256),
-            new Transform(vec3.fromValues(x - offset, y - offset, 0)),
-            new Material(this.guiProperties.albedo, y / (N - 1), x / (N - 1))
+            new Transform(vec3.fromValues(x - offsetX, y - offsetY, 0)),
+            new Material(this.guiProperties.albedo, metalness, roughness)
           )
         );
       }
@@ -119,7 +130,7 @@ class Application {
           'uEnvironment.diffuse': diffuseEnvMap
         })
       ),
-      'Render Quad': new Scene(
+      'IBL Diffuse Map': new Scene(
         this.camera,
         quadRenderShader,
         [
@@ -249,8 +260,6 @@ class Application {
    * Called at every loop, after the [[Application.update]] method.
    */
   render() {
-    // return;
-
     this.context.clear();
     this.context.setDepthTest(true);
     // this._context.setCulling(WebGL2RenderingContext.BACK);
@@ -259,9 +268,8 @@ class Application {
       this.context.gl.drawingBufferWidth / this.context.gl.drawingBufferHeight;
 
     const camera = this.camera;
-    vec3.set(camera.transform.position, 0.0, 0.0, 8.0);
     camera.setParameters(aspect);
-    camera.update();
+    this.swivelCamera();
 
     const props = this.guiProperties;
 
@@ -275,6 +283,18 @@ class Application {
     });
 
     this.scene?.render(this.context);
+  }
+
+  swivelCamera() {
+    const x = Math.sin(this.cameraSwivel) * this.cameraDistance;
+    const z = Math.cos(this.cameraSwivel) * this.cameraDistance;
+    vec3.set(this.camera.transform.position, x, 0.0, z);
+    quat.setAxisAngle(
+      this.camera.transform.rotation,
+      vec3.fromValues(0, 1, 0),
+      this.cameraSwivel
+    );
+    this.camera.update();
   }
 
   /**
@@ -300,6 +320,20 @@ class Application {
     const materialFolder = gui.addFolder('Material');
     materialFolder.addColor(this.guiProperties, 'albedo');
 
+    const cameraFolder = gui.addFolder('Camera');
+    cameraFolder
+      .add(this.guiProperties, 'cameraSwivel', -Math.PI, Math.PI)
+      .onChange((swivel) => {
+        this.cameraSwivel = swivel;
+        this.swivelCamera();
+      });
+    cameraFolder
+      .add(this.guiProperties, 'cameraDistance', 1, 15)
+      .onChange((distance) => {
+        this.cameraDistance = distance;
+        this.swivelCamera();
+      });
+
     sceneSelector.onChange((scene) => {
       console.info(`Changed to '${scene}' scene`);
       this.scene = this.scenes[scene];
@@ -312,17 +346,6 @@ class Application {
 const canvas = document.getElementById('main-canvas') as HTMLCanvasElement;
 let app = new Application(canvas as HTMLCanvasElement);
 app.init();
-
-// canvas.addEventListener('webglcontextlost', (event) => {
-//   console.error('WebGL context lost');
-//   event.preventDefault();
-// });
-
-// canvas.addEventListener('webglcontextrestored', () => {
-//   console.info('WebGL context restored');
-//   app = new Application(canvas as HTMLCanvasElement);
-//   app.init();
-// });
 
 function animate() {
   app.update();
