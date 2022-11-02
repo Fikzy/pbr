@@ -7,6 +7,15 @@ out vec4 outFragColor;
 uniform sampler2D uEnvironmentMap;
 
 const float PI = 3.14159265359;
+const float RECIPROCAL_PI = 0.31830988618;
+const float RECIPROCAL_PI2 = 0.15915494;
+
+vec2 cartesianToPolar(vec3 n) {
+  vec2 uv;
+  uv.x = atan(n.z, n.x) * RECIPROCAL_PI2 + 0.5;
+  uv.y = asin(n.y) * RECIPROCAL_PI + 0.5;
+  return uv;
+}
 
 // http://graphicrants.blogspot.com/2009/04/rgbm-color-encoding.html
 vec4 rgbmEncode(vec3 color, float maxValue) {
@@ -22,14 +31,17 @@ void main()
 {
   vec3 acc = vec3(0.0);
 
-  float sampleDelta = 0.01;
+  float sampleDelta = 0.05;
   float count = 0.0; 
-  for(float phi = -0.5; phi < 0.5; phi += sampleDelta)
+  for(float phi = -PI * 0.5; phi < PI * 0.5; phi += sampleDelta)
   {
-      for(float theta = -1.0; theta < 1.0; theta += sampleDelta)
+      for(float theta = -PI * 0.5; theta < PI * 0.5; theta += sampleDelta)
       {
-          vec2 uv = vPosition.xy + vec2(phi, theta);
-          acc += texture(uEnvironmentMap, uv).rgb * cos(phi * PI) * cos(theta * PI * 0.5);
+          vec2 polar = vPosition.xy * PI / vec2(1.0, 2.0) + vec2(theta, phi);
+          vec3 dir = vec3(cos(polar.x) * cos(polar.y), sin(polar.y), sin(polar.x) * cos(polar.y));
+          vec2 uv = cartesianToPolar(dir);
+
+          acc += texture(uEnvironmentMap, uv).rgb * cos(theta) * cos(phi);
           count++;
       }
   }
