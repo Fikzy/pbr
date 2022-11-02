@@ -250,6 +250,7 @@ export class GLContext {
     gl.bindTexture(bindType, glObject);
 
     if (texture instanceof Texture2D) {
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, texture.flipY);
       if ((texture.data as PixelArray).buffer != null) {
         // Raw data.
         gl.texImage2D(
@@ -276,7 +277,6 @@ export class GLContext {
           texture.data
         );
       }
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, texture.flipY);
     }
 
     gl.texParameteri(bindType, gl.TEXTURE_MIN_FILTER, texture.minFilterGL);

@@ -96,7 +96,7 @@ void main()
 
   // IBL Diffuse
   #ifdef USE_DIFFUSE
-    vec2 uvDiffuse = vec2(0., 1.) + vec2(1., -1.) * cartesianToPolar(normal); // flip y axis
+    vec2 uvDiffuse = cartesianToPolar(normal);
     vec4 diffuseTexel = texture(uEnvironment.diffuse, uvDiffuse);
     vec3 diffuseBRDFEval = kd * rgbmToRgb(diffuseTexel, 8.0);
   #endif // USE_DIFFUSE

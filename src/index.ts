@@ -182,6 +182,7 @@ class Application {
 
     // set the filtering so we don't need mips
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
 
@@ -223,7 +224,8 @@ class Application {
     this.context.resize();
 
     const diff = new Texture2D(pixels, width, height, format, format, type);
-    diff.flipY = true;
+    diff.wrapS = gl.REPEAT;
+    diff.wrapT = gl.REPEAT;
     this.context.uploadTexture(diff);
     return diff;
   }
@@ -322,7 +324,7 @@ class Application {
 
     const cameraFolder = gui.addFolder('Camera');
     cameraFolder
-      .add(this.guiProperties, 'cameraSwivel', -Math.PI, Math.PI)
+      .add(this.guiProperties, 'cameraSwivel', -Math.PI, Math.PI, 0.01)
       .onChange((swivel) => {
         this.cameraSwivel = swivel;
         this.swivelCamera();
@@ -345,14 +347,16 @@ class Application {
 
 const canvas = document.getElementById('main-canvas') as HTMLCanvasElement;
 let app = new Application(canvas as HTMLCanvasElement);
-app.init();
 
 function animate() {
   app.update();
   app.render();
   window.requestAnimationFrame(animate);
 }
-animate();
+
+app.init().then(() => {
+  animate();
+});
 
 /**
  * Handles resize.
