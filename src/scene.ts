@@ -1,9 +1,9 @@
 import { Camera } from './camera';
-import { Environment } from './environment';
 import { GLContext } from './gl';
 import { PonctualLight } from './lights/lights';
 import { Model } from './model';
 import { Shader } from './shader/shader';
+import { TextureLoader } from './texture-loader';
 import { Texture } from './textures/texture';
 import { UniformType } from './types';
 
@@ -12,25 +12,25 @@ export class Scene {
   public shader: Shader;
   public models: Model[];
   public lights: PonctualLight[];
-  public environment?: Environment;
+  public textureLoader?: TextureLoader;
 
   public constructor(
     camera: Camera,
     shader: Shader,
     models: Model[],
     lights: PonctualLight[] = [],
-    environment?: Environment
+    textureLoader?: TextureLoader
   ) {
     this.camera = camera;
     this.models = models;
     this.lights = lights;
     this.shader = shader;
-    this.environment = environment;
+    this.textureLoader = textureLoader;
   }
 
   public init(context: GLContext) {
     this.models.forEach((model) => context.uploadGeometry(model.geometry));
-    this.environment?.init(context);
+    this.textureLoader?.init(context);
   }
 
   public render(context: GLContext) {
@@ -38,7 +38,7 @@ export class Scene {
 
     uniforms['uCamera.position'] = this.camera.transform.position;
 
-    this.environment?.feedUniforms(uniforms);
+    this.textureLoader?.feedUniforms(uniforms);
 
     this.lights.forEach((light, index) => light.feedUniforms(uniforms, index));
 

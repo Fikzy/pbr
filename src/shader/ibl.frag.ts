@@ -95,7 +95,7 @@ void main()
   vec3 kd = (1.0 - ks) * (1.0 - uMaterial.metallic) * albedo;
 
   // IBL Diffuse
-  vec2 uvDiffuse = vec2(0., 1.) + vec2(1., -1.) * cartesianToPolar(normal);
+  vec2 uvDiffuse = vec2(0., 1.) + vec2(1., -1.) * cartesianToPolar(normal); // flip y axis
   vec4 diffuseTexel = texture(uEnvironment.diffuse, uvDiffuse);
   vec3 diffuseBRDFEval = kd * rgbmToRgb(diffuseTexel, 8.0);
 
